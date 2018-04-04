@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Jeu De La Vie</title>
+    <style>
+        .cell {
+            display: inline-block;
+            min-width:5px;
+            min-height:5px;
+        }
+
+        .cellVivante {
+            background: green;  
+        }
+
+        .cellMorte {
+            background-color: gainsboro;
+        }
+
+        .ligne {
+            max-height: 5px;
+        }
+
+        .univers {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border: black solid 1px;
+        }
+    </style>
+    <script src="./angular.min.js"></script>
+</head>
+<body>
+    <div ng-app="jeuDeLaVie" ng-controller="defaultCtl">
+        <h1>{{titre}}</h1>
+        <div ma-balise-angular></div>
+        <input type='text' ng-model='titre' ng-init='initialiserTitre()'/>
+        <hr>
+
+        <div class='univers'>
+            <div class='ligne' ng-repeat='ligne in univers' ligne></div>
+        </div>
+        
+        <button ng-click="random()">Randomizer</button>
+        <button ng-click="nextWorld()">Etat suivant</button>
+
+        <label>Avancer automatiquement</label>
+        <input type="checkbox"
+            ng-model="autoAvancer" ng-init="autoAvancer = false"
+            ng-change="verifierAutoAvancer()"/>
+        
+
+    </div>
+
+
+
+    <script>
+        var ETAT = {
+            vivant : 0,
+            mort : 1
+        }
+
+        angular
+        .module("jeuDeLaVie", [])
+        .controller("defaultCtl", ['$scope', function($scope) {
+
+            $scope.initialiserTitre = function() {
+                $scope.titre = "Jeu de la vie"
+            }
+
+            $scope.random = function() {
+                for(var i=0; i < $scope.hauteur; i++) {
+                    for(var j=0; j<$scope.largeur;j++) {
+                        $scope.univers[i][j].etat = Math.random()<0.25?ETAT.vivant:ETAT.mort
+                    }
+                }                
+            }
+
+            var refInterval
+            $scope.verifierAutoAvancer = function () {
+                // on crée un timer si la case a été coché
+                if ($scope.autoAvancer) {
+                    refInterval = setInterval(function() {
+                        $scope.nextWorld()
+                        $scope.$apply()
+                    }, 50)
+                } else {
+                    if (refInterval)  {
+                        clearInterval(refInterval)
+                        refInterval = undefined
+                    }
+                        
+                }
+            }
+
+
+            // calcul des prochains états
+            $scope.nextWorld = function() {
+                for(var i=0; i < $scope.hauteur; i++) {
+                    for(var j=0; j<$scope.largeur;j++) {
+                        var nbVoisinsVivant = 0
+                        for (ki=-1;ki<=1;ki++) {
+                            for (kj=-1;kj<=1;kj++) {
+                                if (!(ki==0 && kj ==0))
+                                try {
+                                    if ($scope.univers[i+ki][j+kj].etat == ETAT.vivant)
+                                        nbVoisinsVivant++
+                                } catch (e) {}
+                            }
+                        }
+                        
+                        if (nbVoisinsVivant==2)
+                            $scope.univers[i][j].nextEtat = $scope.univers[i][j].etat
+                        else if (nbVoisinsVivant==3)
+                            $scope.univers[i][j].nextEtat = ETAT.vivant
+                        else
+                            $scope.univers[i][j].nextEtat = ETAT.mort
+
+                    }
+                }
+
+                for(var i=0; i < $scope.hauteur; i++) {
+                    for(var j=0; j<$scope.largeur;j++) {
+                        $scope.univers[i][j].etat = $scope.univers[i][j].nextEtat
+                        
+                    }
+                }
+            }
+
+            $scope.toto= 'abc'
+            // $scope.titre = 'jeu de la vie'
+        
+            
+
+            $scope.univers = []
+            $scope.largeur = 64
+            $scope.hauteur = 64
+
+            for(var i=0; i < $scope.hauteur; i++) {
+                var ligne = []
+                $scope.univers.push(ligne)
+                for(var j=0; j<$scope.largeur;j++) {
+                    ligne.push({
+                        "etat" : ETAT.mort
+                    })
+                }
+            }
+
+        }])
+        .directive("maBaliseAngular", function(){
+            return {
+                template : "<b>test directive</b>"
+            }
+        })
+        .filter("celluleEnString", function(){
+            return function(cellule) {
+                
+                if(cellule.etat==ETAT.vivant) {
+                    return "vivant"
+                } else if(cellule.etat == ETAT.mort) {
+                    return "mort"
+                } else {
+                    throw new Error("Etat inexistant")
+                }
+            }
+        }) 
+        .directive("ligne", function(){
+            return {
+                template : `<div ng-repeat="cellule in ligne" class='cell {{cellule|cellEnClasse}}' cellule>p</div>`
+            }
+        })
+        .directive("cellule", function() {
+            return {
+                template : " "
+            }
+        })
+        .filter("cellEnClasse", function(){
+            return function(cellule) {
+                  
+                if(cellule.etat==ETAT.vivant) {
+                    return "cellVivante"
+                } else if(cellule.etat == ETAT.mort) {
+                    return "cellMorte"
+                } else {
+                    throw new Error("Etat inexistant")
+                }
+            }
+        })
+
+    </script>
+</body>
+</html>
